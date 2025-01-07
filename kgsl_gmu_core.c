@@ -259,7 +259,6 @@ int gmu_core_iommu_init(struct kgsl_device *device)
 	}
 
 	dev_err(gmu_pdev_dev, "Unable to attach GMU IOMMU domain: %d\n", ret);
-	BUG_ON(1); /*MMI_STOPSHIP <kgsl>: temp add for qcom debug*/
 	iommu_domain_free(device->gmu_core.domain);
 	device->gmu_core.domain = NULL;
 
