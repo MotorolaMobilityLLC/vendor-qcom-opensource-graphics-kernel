@@ -626,9 +626,9 @@ static int _gmu_fp_store(void *data, u64 val)
 	if (val == device->gmu_core.gf_panic)
 		return 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	device->gmu_core.gf_panic = val;
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return 0;
 }

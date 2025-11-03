@@ -1367,9 +1367,9 @@ static int kgsl_close_device(struct kgsl_device *device)
 
 	mutex_lock(&device->file_mutex);
 	if (device->open_count == 1) {
-		mutex_lock(&device->mutex);
+		kgsl_mutex_lock(&device->mutex);
 		result = device->ftbl->last_close(device);
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 	}
 
 	/*
@@ -1450,9 +1450,9 @@ static int kgsl_open_device(struct kgsl_device *device)
 
 	mutex_lock(&device->file_mutex);
 	if (device->open_count == 0) {
-		mutex_lock(&device->mutex);
+		kgsl_mutex_lock(&device->mutex);
 		result = device->ftbl->first_open(device);
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 
 		if (result)
 			goto out;

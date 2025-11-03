@@ -889,7 +889,7 @@ static void gen7_process_syncobj_query_work(struct kthread_work *work)
 	bool missing = true;
 
 	mutex_lock(&hwsched->mutex);
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	list_for_each_entry(obj, &hwsched->cmd_list, node) {
 		struct kgsl_drawobj *drawobj = obj->drawobj;
@@ -923,7 +923,7 @@ static void gen7_process_syncobj_query_work(struct kthread_work *work)
 		}
 	}
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	mutex_unlock(&hwsched->mutex);
 
 	kgsl_context_put(context);
@@ -1152,7 +1152,7 @@ static void gen7_defer_hw_fence_work(struct kthread_work *work)
 	 * recovery
 	 */
 	mutex_lock(&adreno_dev->hwsched.mutex);
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	spin_lock(&hfi->hw_fence.lock);
 	drawctxt = hfi->hw_fence.defer_drawctxt;
@@ -1179,7 +1179,7 @@ static void gen7_defer_hw_fence_work(struct kthread_work *work)
 	_disable_hw_fence_throttle(adreno_dev, false);
 
 unlock:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	mutex_unlock(&adreno_dev->hwsched.mutex);
 }
 
@@ -3192,7 +3192,7 @@ int gen7_send_hw_fence_hfi_wait_ack(struct adreno_device *adreno_dev,
 	int ret = 0;
 
 	/* Device mutex is necessary to ensure only one hardware fence ack is being waited for */
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return -EINVAL;
 
 	spin_lock(&hfi->hw_fence.lock);
@@ -3858,7 +3858,7 @@ void gen7_hwsched_context_detach(struct adreno_context *drawctxt)
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	int ret = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	ret = send_context_unregister_hfi(adreno_dev, context,
 		drawctxt->internal_timestamp);
@@ -3877,7 +3877,7 @@ void gen7_hwsched_context_detach(struct adreno_context *drawctxt)
 
 	context->gmu_registered = false;
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 }
 
 u32 gen7_hwsched_preempt_count_get(struct adreno_device *adreno_dev)

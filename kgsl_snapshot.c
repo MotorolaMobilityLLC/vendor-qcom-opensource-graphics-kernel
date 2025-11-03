@@ -780,7 +780,7 @@ static int snapshot_release(struct kgsl_device *device,
 	bool snapshot_free = false;
 	int ret = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	snapshot->sysfs_read--;
 
 	/*
@@ -792,7 +792,7 @@ static int snapshot_release(struct kgsl_device *device,
 		if (!snapshot->sysfs_read)
 			snapshot_free = true;
 	}
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	if (snapshot_free)
 		kgsl_free_snapshot(snapshot);
 	return ret;
@@ -809,7 +809,7 @@ static ssize_t snapshot_show(struct file *filep, struct kobject *kobj,
 	struct snapshot_obj_itr itr;
 	int ret = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	snapshot = device->snapshot;
 	if (snapshot != NULL) {
 		/*
@@ -826,7 +826,7 @@ static ssize_t snapshot_show(struct file *filep, struct kobject *kobj,
 		if (!ret)
 			snapshot->sysfs_read++;
 	}
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	if (ret)
 		return ret;
@@ -877,13 +877,13 @@ static ssize_t snapshot_show(struct file *filep, struct kobject *kobj,
 	if (itr.write == 0) {
 		bool snapshot_free = false;
 
-		mutex_lock(&device->mutex);
+		kgsl_mutex_lock(&device->mutex);
 		if (--snapshot->sysfs_read == 0) {
 			if (device->snapshot == snapshot)
 				device->snapshot = NULL;
 			snapshot_free = true;
 		}
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 
 		if (snapshot_free)
 			kgsl_free_snapshot(snapshot);
@@ -983,9 +983,9 @@ static ssize_t timestamp_show(struct kgsl_device *device, char *buf)
 {
 	unsigned long timestamp;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	timestamp = device->snapshot ? device->snapshot->timestamp : 0;
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return scnprintf(buf, PAGE_SIZE, "%lu\n", timestamp);
 }
 
