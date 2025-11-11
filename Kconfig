@@ -118,3 +118,11 @@ config QCOM_KGSL_HIBERNATION
 	  Say 'Y' to enable hibernation support in kgsl. If enabled, kgsl
 	  will register necessary power manager callbacks to support
 	  hibernation.
+config QCOM_KGSL_RT_MUTEX
+	bool "Use RT-mutex in KGSL"
+	depends on RT_MUTEXES
+	help
+	  Say 'Y' to use RT-mutex instead of mutex in KGSL driver. If
+	  enabled, KGSL will use RT-mutex instead of mutex to prevent
+	  priority inversion. RT-mutexes extend the semantics of simple
+	  mutexes by the priority inheritance protocol.

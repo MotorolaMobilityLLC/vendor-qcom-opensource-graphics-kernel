@@ -214,13 +214,13 @@ static void adreno_input_work(struct work_struct *work)
 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
 	const struct adreno_power_ops *ops = ADRENO_POWER_OPS(adreno_dev);
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	device->pwrctrl.wake_on_touch = true;
 
 	ops->touch_wakeup(adreno_dev);
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 }
 
 /* Wake up the touch event kworker to initiate GPU wakeup */
@@ -855,7 +855,7 @@ static int register_l3_voter(struct kgsl_device *device)
 {
 	int ret = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	if (!device->l3_vote)
 		goto done;
@@ -887,7 +887,7 @@ static int register_l3_voter(struct kgsl_device *device)
 	device->num_l3_pwrlevels = 3;
 
 done:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return ret;
 }
@@ -1191,7 +1191,7 @@ static void adreno_setup_device(struct adreno_device *adreno_dev)
 
 	idr_init(&adreno_dev->dev.context_idr);
 
-	mutex_init(&adreno_dev->dev.mutex);
+	kgsl_mutex_init(&adreno_dev->dev.mutex);
 	mutex_init(&adreno_dev->dcvs_tuning_mutex);
 	INIT_LIST_HEAD(&adreno_dev->dev.globals);
 
@@ -1591,9 +1591,9 @@ static int adreno_pm_resume(struct device *dev)
 	}
 #endif
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	ops->pm_resume(adreno_dev);
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	kgsl_reclaim_start();
 	return 0;
@@ -1623,7 +1623,7 @@ static int adreno_pm_suspend(struct device *dev)
 	adreno_dev = ADRENO_DEVICE(device);
 	ops = ADRENO_POWER_OPS(adreno_dev);
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	status = ops->pm_suspend(adreno_dev);
 
 #if IS_ENABLED(CONFIG_DEEPSLEEP)
@@ -1631,7 +1631,7 @@ static int adreno_pm_suspend(struct device *dev)
 		adreno_zap_shader_unload(adreno_dev);
 #endif
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	if (status)
 		return status;
@@ -1804,14 +1804,14 @@ static int adreno_pwrctrl_active_count_get(struct adreno_device *adreno_dev)
 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
 	int ret = 0;
 
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return -EINVAL;
 
 	if ((atomic_read(&device->active_cnt) == 0) &&
 		(device->state != KGSL_STATE_ACTIVE)) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		wait_for_completion(&device->hwaccess_gate);
-		mutex_lock(&device->mutex);
+		kgsl_mutex_lock(&device->mutex);
 		device->pwrctrl.superfast = true;
 		ret = kgsl_pwrctrl_change_state(device, KGSL_STATE_ACTIVE);
 	}
@@ -1826,7 +1826,7 @@ static void adreno_pwrctrl_active_count_put(struct adreno_device *adreno_dev)
 {
 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
 
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return;
 
 	if (WARN(atomic_read(&device->active_cnt) == 0,
@@ -2718,7 +2718,7 @@ int adreno_idle(struct kgsl_device *device)
 	 * more commands to the hardware
 	 */
 
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return -EDEADLK;
 
 	/* Check if we are already idle before idling dispatcher */
@@ -3049,14 +3049,14 @@ static void adreno_device_private_destroy(struct kgsl_device_private *dev_priv)
 		dev_priv);
 	struct adreno_perfcounter_list_node *p, *tmp;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	list_for_each_entry_safe(p, tmp, &adreno_priv->perfcounter_list, node) {
 		adreno_perfcounter_put(adreno_dev, p->groupid,
 					p->countable, PERFCOUNTER_FLAG_NONE);
 		list_del(&p->node);
 		kfree(p);
 	}
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	kfree(adreno_priv);
 }
@@ -3224,24 +3224,24 @@ static int adreno_queue_recurring_cmd(struct kgsl_device_private *dev_priv,
 	if (ret)
 		return ret;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	/* Only one recurring command allowed */
 	if (hwsched->recurring_cmdobj) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return -EINVAL;
 	}
 
 	ret = kgsl_check_context_state(context);
 	if (ret) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return ret;
 	}
 
 	set_bit(CMDOBJ_RECURRING_START, &cmdobj->priv);
 
 	ret = gpudev->send_recurring_cmdobj(adreno_dev, cmdobj);
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	if (!ret)
 		srcu_notifier_call_chain(&device->nh, GPU_GMU_READY, NULL);
@@ -3264,11 +3264,11 @@ static int adreno_dequeue_recurring_cmd(struct kgsl_device *device,
 	if (!gpudev->send_recurring_cmdobj)
 		return -ENODEV;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	/* We can safely return here as recurring wokload is already untracked */
 	if (hwsched->recurring_cmdobj == NULL) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return -EINVAL;
 	}
 
@@ -3276,13 +3276,13 @@ static int adreno_dequeue_recurring_cmd(struct kgsl_device *device,
 
 	/* Check if the recurring command is for same context or not*/
 	if (recurring_drawobj->context != context) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return -EINVAL;
 	}
 
 	ret = kgsl_check_context_state(context);
 	if (ret) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return ret;
 	}
 
@@ -3291,7 +3291,7 @@ static int adreno_dequeue_recurring_cmd(struct kgsl_device *device,
 
 	ret = gpudev->send_recurring_cmdobj(adreno_dev, hwsched->recurring_cmdobj);
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	if (!ret)
 		srcu_notifier_call_chain(&device->nh, GPU_GMU_STOP, NULL);
@@ -3361,7 +3361,7 @@ int adreno_power_cycle(struct adreno_device *adreno_dev,
 	const struct adreno_power_ops *ops = ADRENO_POWER_OPS(adreno_dev);
 	int ret;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	ret = ops->pm_suspend(adreno_dev);
 
 	if (!ret) {
@@ -3370,7 +3370,7 @@ int adreno_power_cycle(struct adreno_device *adreno_dev,
 		ops->pm_resume(adreno_dev);
 	}
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return ret;
 }
@@ -3732,7 +3732,7 @@ static int adreno_hibernation_suspend(struct device *dev)
 	adreno_dev = ADRENO_DEVICE(device);
 	ops = ADRENO_POWER_OPS(adreno_dev);
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	status = ops->pm_suspend(adreno_dev);
 	if (status)
@@ -3754,7 +3754,7 @@ static int adreno_hibernation_suspend(struct device *dev)
 	status = adreno_secure_pt_hibernate(adreno_dev);
 
 err:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return status;
 }
 
@@ -3775,7 +3775,7 @@ static int adreno_hibernation_resume(struct device *dev)
 	adreno_dev = ADRENO_DEVICE(device);
 	ops = ADRENO_POWER_OPS(adreno_dev);
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	ret = adreno_secure_pt_restore(adreno_dev);
 	if (ret)
@@ -3796,7 +3796,7 @@ static int adreno_hibernation_resume(struct device *dev)
 	ops->pm_resume(adreno_dev);
 
 err:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return ret;
 }
 

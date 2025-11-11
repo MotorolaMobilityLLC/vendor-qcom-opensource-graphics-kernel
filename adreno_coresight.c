@@ -21,7 +21,7 @@ ssize_t adreno_coresight_show_register(struct device *dev,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	unsigned int val = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	/*
 	 * Return the current value of the register if coresight is enabled,
 	 * otherwise report 0
@@ -37,7 +37,7 @@ ssize_t adreno_coresight_show_register(struct device *dev,
 	val = cattr->reg->value;
 
 out:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return scnprintf(buf, PAGE_SIZE, "0x%X\n", val);
 }
 
@@ -56,7 +56,7 @@ ssize_t adreno_coresight_store_register(struct device *dev,
 	if (ret)
 		return ret;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	/* Ignore writes while coresight is off */
 	if (!adreno_csdev->enabled)
@@ -69,7 +69,7 @@ ssize_t adreno_coresight_store_register(struct device *dev,
 	}
 
 out:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return size;
 }
 
@@ -87,10 +87,10 @@ static void adreno_coresight_disable(struct coresight_device *csdev,
 	const struct adreno_coresight *coresight = adreno_csdev->coresight;
 	int i;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	if (!adreno_csdev->enabled) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return;
 	}
 
@@ -103,7 +103,7 @@ static void adreno_coresight_disable(struct coresight_device *csdev,
 
 	adreno_csdev->enabled = false;
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 }
 
 static void _adreno_coresight_get_and_clear(struct adreno_device *adreno_dev,
@@ -153,7 +153,7 @@ static int adreno_coresight_enable(struct coresight_device *csdev,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	int ret = 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	if (!adreno_csdev->enabled) {
 		int i;
 
@@ -171,7 +171,7 @@ static int adreno_coresight_enable(struct coresight_device *csdev,
 		}
 
 	}
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return ret;
 }
 
@@ -223,7 +223,7 @@ static int funnel_gfx_enable(struct coresight_device *csdev, int inport,
 	if (!device)
 		return -ENODEV;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	ret = adreno_active_count_get(adreno_dev);
 	if (ret)
@@ -234,7 +234,7 @@ static int funnel_gfx_enable(struct coresight_device *csdev, int inport,
 
 	adreno_active_count_put(adreno_dev);
 err:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return ret;
 }
 
@@ -248,7 +248,7 @@ static void funnel_gfx_disable(struct coresight_device *csdev, int inport,
 	if (!device)
 		return;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	ret = adreno_active_count_get(adreno_dev);
 	if (ret)
@@ -259,7 +259,7 @@ static void funnel_gfx_disable(struct coresight_device *csdev, int inport,
 
 	adreno_active_count_put(adreno_dev);
 err:
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 }
 
 struct coresight_ops_link funnel_link_gfx_ops = {

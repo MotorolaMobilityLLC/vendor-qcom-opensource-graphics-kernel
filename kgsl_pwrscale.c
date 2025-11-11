@@ -115,7 +115,7 @@ void kgsl_pwrscale_update_stats(struct kgsl_device *device)
 	struct kgsl_pwrctrl *pwrctrl = &device->pwrctrl;
 	struct kgsl_pwrscale *psc = &device->pwrscale;
 
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return;
 
 	if (!psc->enabled)
@@ -148,7 +148,7 @@ void kgsl_pwrscale_update(struct kgsl_device *device)
 {
 	ktime_t t;
 
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return;
 
 	if (!device->pwrscale.enabled)
@@ -178,7 +178,7 @@ void kgsl_pwrscale_update(struct kgsl_device *device)
  */
 void kgsl_pwrscale_disable(struct kgsl_device *device, bool turbo)
 {
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return;
 
 	if (device->pwrscale.devfreqptr)
@@ -198,7 +198,7 @@ void kgsl_pwrscale_disable(struct kgsl_device *device, bool turbo)
  */
 void kgsl_pwrscale_enable(struct kgsl_device *device)
 {
-	if (WARN_ON(!mutex_is_locked(&device->mutex)))
+	if (WARN_ON(!kgsl_mutex_is_locked(&device->mutex)))
 		return;
 
 	if (device->pwrscale.devfreqptr) {
@@ -259,7 +259,7 @@ int kgsl_devfreq_target(struct device *dev, unsigned long *freq, u32 flags)
 
 	rec_freq = *freq;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	cur_freq = kgsl_pwrctrl_active_freq(pwr);
 	level = pwr->active_pwrlevel;
 
@@ -276,7 +276,7 @@ int kgsl_devfreq_target(struct device *dev, unsigned long *freq, u32 flags)
 
 	*freq = kgsl_pwrctrl_active_freq(pwr);
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return 0;
 }
 
@@ -306,7 +306,7 @@ int kgsl_devfreq_get_dev_status(struct device *dev,
 	pwrscale = &device->pwrscale;
 	pwrctrl = &device->pwrctrl;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	tmp1 = ktime_get();
 	/*
@@ -353,7 +353,7 @@ int kgsl_devfreq_get_dev_status(struct device *dev,
 		&pwrscale->accum_stats, device->active_context_count);
 	memset(&pwrscale->accum_stats, 0, sizeof(pwrscale->accum_stats));
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return 0;
 }
@@ -390,9 +390,9 @@ int kgsl_devfreq_get_cur_freq(struct device *dev, unsigned long *freq)
 		return -EPROTO;
 	}
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	*freq = kgsl_pwrctrl_active_freq(&device->pwrctrl);
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return 0;
 }
@@ -475,7 +475,7 @@ int kgsl_busmon_target(struct device *dev, unsigned long *freq, u32 flags)
 	if (!pwr->bus_control)
 		return 0;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	level = pwr->active_pwrlevel;
 	pwr_level = &pwr->pwrlevels[level];
 	bus_flag = device->pwrscale.bus_profile.flag;
@@ -489,7 +489,7 @@ int kgsl_busmon_target(struct device *dev, unsigned long *freq, u32 flags)
 	 * ignore the call
 	 */
 	if (pwr_level->gpu_freq != *freq) {
-		mutex_unlock(&device->mutex);
+		kgsl_mutex_unlock(&device->mutex);
 		return 0;
 	}
 
@@ -520,7 +520,7 @@ int kgsl_busmon_target(struct device *dev, unsigned long *freq, u32 flags)
 		kgsl_bus_update(device, KGSL_BUS_VOTE_ON);
 	}
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return 0;
 }
 
@@ -682,12 +682,12 @@ static int thermal_max_notifier_call(struct notifier_block *nb, unsigned long va
 	trace_kgsl_thermal_constraint(max_freq);
 	pwr->thermal_pwrlevel = level;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 
 	/* Update the current level using the new limit */
 	kgsl_pwrctrl_pwrlevel_change(device, pwr->active_pwrlevel);
 
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 	return NOTIFY_OK;
 }
 

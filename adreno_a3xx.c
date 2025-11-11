@@ -1471,7 +1471,7 @@ static int a3xx_setproperty(struct kgsl_device_private *dev_priv,
 	if (copy_from_user(&enable, value, sizeof(enable)))
 		return -EFAULT;
 
-	mutex_lock(&device->mutex);
+	kgsl_mutex_lock(&device->mutex);
 	if (enable) {
 		device->pwrctrl.ctrl_flags = 0;
 
@@ -1488,7 +1488,7 @@ static int a3xx_setproperty(struct kgsl_device_private *dev_priv,
 		a3xx_soft_fault_detect_stop(adreno_dev);
 		kgsl_pwrscale_disable(device, true);
 	}
-	mutex_unlock(&device->mutex);
+	kgsl_mutex_unlock(&device->mutex);
 
 	return 0;
 }
