@@ -893,7 +893,9 @@ static void gen7_process_syncobj_query_work(struct kthread_work *work)
 	struct cmd_list_obj *obj;
 	bool missing = true;
 
-	mutex_lock(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_lock(&hwsched->mutex);
+	// END IKSWW-64286
 	kgsl_mutex_lock(&device->mutex);
 
 	list_for_each_entry(obj, &hwsched->cmd_list, node) {
@@ -929,7 +931,9 @@ static void gen7_process_syncobj_query_work(struct kthread_work *work)
 	}
 
 	kgsl_mutex_unlock(&device->mutex);
-	mutex_unlock(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_unlock(&hwsched->mutex);
+	// END IKSWW-64286
 
 	kgsl_context_put(context);
 	kfree(query_work);
@@ -1163,7 +1167,9 @@ static void gen7_defer_hw_fence_work(struct kthread_work *work)
 	 * Grab the dispatcher and device mutex as we don't want to race with concurrent fault
 	 * recovery
 	 */
-	mutex_lock(&adreno_dev->hwsched.mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_lock(&adreno_dev->hwsched.mutex);
+	// END IKSWW-64286
 	kgsl_mutex_lock(&device->mutex);
 
 	ret = process_hw_fence_deferred_ctxt(adreno_dev, drawctxt, ts);
@@ -1184,7 +1190,9 @@ static void gen7_defer_hw_fence_work(struct kthread_work *work)
 
 unlock:
 	kgsl_mutex_unlock(&device->mutex);
-	mutex_unlock(&adreno_dev->hwsched.mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_unlock(&adreno_dev->hwsched.mutex);
+	// END IKSWW-64286
 }
 
 static void process_hw_fence_ack(struct adreno_device *adreno_dev, u32 received_hdr)

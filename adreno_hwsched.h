@@ -10,6 +10,9 @@
 #include <linux/soc/qcom/msm_hw_fence.h>
 
 #include "kgsl_sync.h"
+// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+#include <linux/rtmutex.h>
+// END IKSWW-64286
 
 /* This structure represents inflight command object */
 struct cmd_list_obj {
@@ -74,7 +77,9 @@ struct adreno_hw_fence {
  */
 struct adreno_hwsched {
 	 /** @mutex: Mutex needed to run dispatcher function */
-	struct mutex mutex;
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	struct rt_mutex mutex;
+	// END IKSWW-64286
 	/** @flags: Container for the dispatcher internal flags */
 	unsigned long flags;
 	/** @inflight: Number of active submissions to the dispatch queues */

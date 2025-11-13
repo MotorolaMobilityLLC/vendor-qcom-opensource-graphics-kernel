@@ -735,7 +735,9 @@ static void adreno_hwsched_issuecmds(struct adreno_device *adreno_dev)
 	spin_unlock(&device->submit_lock);
 
 	/* If the dispatcher is busy then schedule the work for later */
-	if (!mutex_trylock(&hwsched->mutex)) {
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	if (!rt_mutex_trylock(&hwsched->mutex)) {
+	// END IKSWW-64286
 		_decrement_submit_now(device);
 		goto done;
 	}
@@ -750,7 +752,9 @@ static void adreno_hwsched_issuecmds(struct adreno_device *adreno_dev)
 		kgsl_mutex_unlock(&device->mutex);
 	}
 
-	mutex_unlock(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_unlock(&hwsched->mutex);
+	// END IKSWW-64286
 	_decrement_submit_now(device);
 	return;
 
@@ -1914,10 +1918,14 @@ static void adreno_hwsched_work(struct kthread_work *work)
 			struct adreno_device, hwsched);
 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
 
-	mutex_lock(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_lock(&hwsched->mutex);
+	// END IKSWW-64286
 
 	if (adreno_hwsched_do_fault(adreno_dev)) {
-		mutex_unlock(&hwsched->mutex);
+		// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+		rt_mutex_unlock(&hwsched->mutex);
+		// END IKSWW-64286
 		return;
 	}
 
@@ -1941,8 +1949,9 @@ static void adreno_hwsched_work(struct kthread_work *work)
 		kgsl_start_idle_timer(device);
 		kgsl_mutex_unlock(&device->mutex);
 	}
-
-	mutex_unlock(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_unlock(&hwsched->mutex);
+	// END IKSWW-64286
 }
 
 void adreno_hwsched_fault(struct adreno_device *adreno_dev,
@@ -2061,7 +2070,9 @@ int adreno_hwsched_init(struct adreno_device *adreno_dev,
 		return PTR_ERR(hwsched->worker);
 	}
 
-	mutex_init(&hwsched->mutex);
+	// BEGIN Motorola, fuyj9, 21/10/2025, IKSWW-64286
+	rt_mutex_init(&hwsched->mutex);
+	// END IKSWW-64286
 
 	kthread_init_work(&hwsched->work, adreno_hwsched_work);
 
