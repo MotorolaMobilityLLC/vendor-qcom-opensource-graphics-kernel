@@ -492,6 +492,10 @@ static DEVICE_ATTR(mapped, 0444, memstat_show, NULL);
 static DEVICE_ATTR(mapped_max, 0444, memstat_show, NULL);
 static DEVICE_ATTR_RW(full_cache_threshold);
 
+#ifdef CONFIG_QCOM_KGSL_PROCESS_RECLAIM
+static DEVICE_ATTR_WO(reclaim_all);
+#endif
+
 static const struct attribute *drv_attr_list[] = {
 	&dev_attr_vmalloc.attr,
 	&dev_attr_vmalloc_max.attr,
@@ -507,6 +511,7 @@ static const struct attribute *drv_attr_list[] = {
 #ifdef CONFIG_QCOM_KGSL_PROCESS_RECLAIM
 	&dev_attr_max_reclaim_limit.attr,
 	&dev_attr_page_reclaim_per_call.attr,
+	&dev_attr_reclaim_all.attr,
 #endif
 	NULL,
 };
