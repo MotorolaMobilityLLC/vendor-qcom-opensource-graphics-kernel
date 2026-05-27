@@ -31,6 +31,26 @@ struct work_struct reclaim_work;
 
 static atomic_t kgsl_nr_to_reclaim;
 
+ssize_t reclaim_all_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	u32 val;
+	int ret;
+
+	ret = kstrtou32(buf, 0, &val);
+	if (ret)
+		return ret;
+
+	if (!val)
+		return count;
+
+	/* Convert MB to pages */
+	atomic_set(&kgsl_nr_to_reclaim, (val << 20) >> PAGE_SHIFT);
+	kgsl_schedule_work(&reclaim_work);
+
+	return count;
+}
+
 static int kgsl_memdesc_get_reclaimed_pages(struct kgsl_mem_entry *entry)
 {
 	struct kgsl_memdesc *memdesc = &entry->memdesc;
